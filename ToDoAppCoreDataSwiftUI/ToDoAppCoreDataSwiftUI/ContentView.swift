@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreData
+import  UserNotifications
  
 struct ContentView: View {
     
@@ -14,12 +15,49 @@ struct ContentView: View {
             UITextView.appearance().backgroundColor = .clear
         }
     
-    @StateObject var viewModel = ViewModel()
+    @StateObject var viewModel = ViewModel() // viewModel.swift
     @FetchRequest(entity: Task.entity(), sortDescriptors: [NSSortDescriptor(key: "date", ascending: true)],animation: .spring()) var results : FetchedResults<Task>
     @Environment(\.managedObjectContext) var context
     
-    var body: some View {
+    func registerForPushNotifications() {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound, .badge, .provisional]) {granted, error in
+            if error == nil {
+                center.getNotificationSettings { settings in
+                    guard (settings.authorizationStatus == .authorized) || (settings.authorizationStatus == .provisional) else { return }
 
+                    DispatchQueue.main.async {
+                        UIApplication.shared.registerForRemoteNotifications()
+                    }
+                }
+            }
+        }
+    }
+    
+    //通知関係メソッド
+    func makeNotification(){
+        //通知タイミングを指定
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        
+        //通知コンテンツの作成
+        let content = UNMutableNotificationContent()
+        content.title = "ローカル通知"
+        content.body = "ローカル通知です"
+        content.sound = UNNotificationSound.default
+        
+        let date = Date()
+        let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date + 5) //<- 現在時刻から10秒後
+        print(dateComponent)
+        
+//        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponent, repeats: false)
+        
+        //通知リクエストを作成
+        let request = UNNotificationRequest(identifier: "notification001", content: content, trigger: trigger)
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+    
+    var body: some View {
+        
         ZStack(alignment: Alignment(horizontal: .trailing, vertical: .bottom), content: {
             NavigationView{
                 VStack(spacing:0){
@@ -87,10 +125,12 @@ struct ContentView: View {
                 Image(systemName: "plus")
                     .font(.largeTitle)
                     .foregroundColor(.white)
-                    .padding(20)
-                    .background(Color.green)
-                    .clipShape(Circle())
+                    .padding(10)
+                    .background(Color.green	)
+                    .clipShape(Rectangle())
                     .padding()
+//                    .overlay(
+//                        Text("追加").foregroundColor(.black).font(.subheadline))
             })
         })
         .ignoresSafeArea(.all, edges: .top)
@@ -104,6 +144,7 @@ struct ContentView: View {
         })
     }
     
+  
     var dateFormat1: DateFormatter {
         let df = DateFormatter()
         df.locale = Locale(identifier: "ja_JP")
@@ -122,6 +163,8 @@ struct ContentView: View {
         viewModel.imageData = Data.init()
     }
 }
+
+
 
 //struct ContentView: View {
 //    @Environment(\.managedObjectContext) private var viewContext
@@ -201,3 +244,4 @@ struct ContentView: View {
 //        ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 //    }
 //}
+

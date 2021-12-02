@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
  
 struct NewDataSheet: View {
     
@@ -17,6 +18,7 @@ struct NewDataSheet: View {
     @State var isActionSheet = false
     @State var isImagePicker = false
     @State var source:UIImagePickerController.SourceType = .photoLibrary
+    @State var buttonText = "5秒後にローカル通知を発行する"
     
     @State private var image = Image(systemName: "photo")
     
@@ -39,8 +41,8 @@ struct NewDataSheet: View {
                         TextEditor(text: $viewModel.content)
                             .padding()
                             .background(Color.primary.opacity(0.1))
-                        .frame(height: 100)
-                            .cornerRadius(10)
+                            .frame(height: 50)
+                        //                            .cornerRadius(10)
                     }
                     .padding()
                     
@@ -49,7 +51,7 @@ struct NewDataSheet: View {
                         TextField("", value: $viewModel.priority, formatter: NumberFormatter())
                             .padding()
                             .background(Color.primary.opacity(0.1))
-                            .cornerRadius(10)
+                        //                            .cornerRadius(10)
                     }
                     .padding()
                     
@@ -66,23 +68,40 @@ struct NewDataSheet: View {
                     .padding()
                     
                     Button(action: {viewModel.writeData(context: context)}, label: {
-                        Label(title:{Text(viewModel.updateItem == nil ? "Add Now" : "Update")
-                            .font(.title)
-                            .foregroundColor(.white)
-                            .fontWeight(.bold)
+                        UNUserNotificationCenter.current().requestAuthorization(options: [.alert,.sound,.badge]){
+                            (granted, error) in
+                            if granted {
+                                //通知が許可されている場合の処理
+                                makeNotification()
+                            }else {
+                                //通知が拒否されている場合の処理
+                                //ボタンの表示を変える
+                                buttonText = "通知が拒否されているので発動できません"
+                                //1秒後に表示を戻す
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                    buttonText = "5秒後にローカル通知を発行する"
+                                }
+                            }
+                        }
+                        Label(title:{Text(viewModel.updateItem == nil ? "登録" : "Update")
+                                .font(.title)
+                                .foregroundColor(.white)
+                                .fontWeight(.bold)
                         },
-                        icon: {Image(systemName: "plus")
-                            .font(.title)
-                            .foregroundColor(.white)
+                              icon: {Image(systemName: "")
+                                .font(.title)
+                                .foregroundColor(.white)
                         })
-                        .padding(.vertical)
-                        .frame(width:UIScreen.main.bounds.width - 30)
-                        .background(Color.orange)
-                        .cornerRadius(50)
+                        //                        .padding(.vertical)
+                            .frame(width:UIScreen.main.bounds.width - 20)
+                            .background(Color.blue)
+                        //                        .cornerRadius(10)」
+                        
                     })
-                    .padding()
-                    .disabled(viewModel.content == "" ? true : false)
-                    .opacity(viewModel.content == "" ? 0.5 : 1)
+                        .padding()
+                        .disabled(viewModel.content == "" ? true : false)
+                        .opacity(viewModel.content == "" ? 0.5 : 1)
+                    
                     
                 }
             }

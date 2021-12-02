@@ -41,7 +41,7 @@ struct CameraView: View {
                                             self.source = .photoLibrary
                                             self.isImagePicker.toggle()
                                     }, label: {
-                                        Text("ライブラリを使用する")
+                                        Text("ライブラリ")
                                     })
                                     Button(action: {
                                             self.source = .camera
