@@ -10,6 +10,7 @@ import CoreData
 import  UserNotifications
  
 struct ContentView: View {
+    @State var buttonText = "5秒後にローカル通知を発行する"
     
     init() {
             UITextView.appearance().backgroundColor = .clear
@@ -19,25 +20,25 @@ struct ContentView: View {
     @FetchRequest(entity: Task.entity(), sortDescriptors: [NSSortDescriptor(key: "date", ascending: true)],animation: .spring()) var results : FetchedResults<Task>
     @Environment(\.managedObjectContext) var context
     
-    func registerForPushNotifications() {
-        let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound, .badge, .provisional]) {granted, error in
-            if error == nil {
-                center.getNotificationSettings { settings in
-                    guard (settings.authorizationStatus == .authorized) || (settings.authorizationStatus == .provisional) else { return }
-
-                    DispatchQueue.main.async {
-                        UIApplication.shared.registerForRemoteNotifications()
-                    }
-                }
-            }
-        }
-    }
+//    func registerForPushNotifications() {
+//        let center = UNUserNotificationCenter.current()
+//        center.requestAuthorization(options: [.alert, .sound, .badge, .provisional]) {granted, error in
+//            if error == nil {
+//                center.getNotificationSettings { settings in
+//                    guard (settings.authorizationStatus == .authorized) || (settings.authorizationStatus == .provisional) else { return }
+//
+//                    DispatchQueue.main.async {
+//                        UIApplication.shared.registerForRemoteNotifications()
+//                    }
+//                }
+//            }
+//        }
+//    }
     
     //通知関係メソッド
     func makeNotification(){
         //通知タイミングを指定
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
         
         //通知コンテンツの作成
         let content = UNMutableNotificationContent()
@@ -45,18 +46,42 @@ struct ContentView: View {
         content.body = "ローカル通知です"
         content.sound = UNNotificationSound.default
         
-        let date = Date()
-        let dateComponent = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date + 5) //<- 現在時刻から10秒後
-        print(dateComponent)
+//        let date = Date()
+//        var dateComponent = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date + 2)
+//        dateComponent.quarter = nil
+//        print(dateComponent)
         
+
 //        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponent, repeats: false)
         
         //通知リクエストを作成
         let request = UNNotificationRequest(identifier: "notification001", content: content, trigger: trigger)
         UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+        dump(request)
     }
     
     var body: some View {
+        Button(action: {
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert,.sound,.badge]){
+                (granted, error) in
+                if granted {
+                    //通知が許可されている場合の処理
+                    makeNotification()
+                }else {
+                    //通知が拒否されている場合の処理
+                    //ボタンの表示を変える
+                    buttonText = "通知が拒否されているので発動できません"
+                    //1秒後に表示を戻す
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    buttonText = "5秒後にローカル通知を発行する"
+                    }
+                }
+            }
+        }) {
+            //ボタンのテキストを表示
+            Text(buttonText)
+        }
+        
         
         ZStack(alignment: Alignment(horizontal: .trailing, vertical: .bottom), content: {
             NavigationView{
